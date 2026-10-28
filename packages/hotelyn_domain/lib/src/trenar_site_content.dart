@@ -7,7 +7,6 @@ class TrenarSiteContent {
     required this.phone,
     required this.email,
     required this.address,
-    required this.license,
     required this.services,
     required this.fleet,
     required this.properties,
@@ -24,7 +23,6 @@ class TrenarSiteContent {
       phone: _requiredString(json, 'phone'),
       email: _requiredString(json, 'email'),
       address: _requiredString(json, 'address'),
-      license: SiteText.fromJson(json['license'], 'license'),
       services: _items(json, 'services'),
       fleet: _items(json, 'fleet'),
       properties: _items(json, 'properties'),
@@ -39,7 +37,6 @@ class TrenarSiteContent {
   final String phone;
   final String email;
   final String address;
-  final SiteText license;
   final List<SiteContentItem> services;
   final List<SiteContentItem> fleet;
   final List<SiteContentItem> properties;
@@ -70,11 +67,6 @@ class TrenarSiteContent {
     phone: '+90 532 789 6161',
     email: 'info@trenartravel.com',
     address: 'Pelitli Mah. Havalimanı Caddesi No:42/A, Trabzon, Türkiye',
-    license: SiteText({
-      'tr': 'TÜRSAB A Grubu Seyahat Acentası Belgesi No: 14829',
-      'en': 'TÜRSAB Group A Travel Agency License No: 14829',
-      'ar': 'ترخيص وكالة سفر TÜRSAB من الفئة A رقم 14829',
-    }),
     services: [
       SiteContentItem(
         title: SiteText({
@@ -695,7 +687,6 @@ class TrenarSiteContent {
     'phone': phone,
     'email': email,
     'address': address,
-    'license': license.toJson(),
     'services': services.map((item) => item.toJson()).toList(),
     'fleet': fleet.map((item) => item.toJson()).toList(),
     'properties': properties.map((item) => item.toJson()).toList(),

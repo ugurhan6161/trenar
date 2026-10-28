@@ -624,15 +624,6 @@ class _HeroSection extends StatelessWidget {
                                         height: 1.15,
                                       ),
                                 ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  content.license.text(locale),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.86),
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -1536,15 +1527,6 @@ class _ContactFooter extends StatelessWidget {
                 SelectableText(content.phone),
                 SelectableText(content.email),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              content.license.text(
-                Localizations.localeOf(context).languageCode,
-              ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
             ),
           ],
         ),
