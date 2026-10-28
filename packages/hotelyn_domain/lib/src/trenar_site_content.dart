@@ -24,7 +24,7 @@ class TrenarSiteContent {
       phone: _requiredString(json, 'phone'),
       email: _requiredString(json, 'email'),
       address: _requiredString(json, 'address'),
-      license: SiteText.fromJson(json['license'], 'license'),
+      license: SiteText({'tr': '', 'en': '', 'ar': ''}),
       services: _items(json, 'services'),
       fleet: _items(json, 'fleet'),
       properties: _items(json, 'properties'),
