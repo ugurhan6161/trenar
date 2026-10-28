@@ -14,6 +14,8 @@ if [[ ! -x "${sdk_dir}/bin/flutter" ]]; then
   rm -f "${archive}"
 fi
 
+git config --global --add safe.directory "${sdk_dir}"
+
 export PATH="${sdk_dir}/bin:${PATH}"
 flutter --version
 

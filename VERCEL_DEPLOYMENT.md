@@ -22,6 +22,10 @@ directory selected, enable **Include source files outside of the Root
 Directory**, save the setting, and redeploy. The shared installer and workspace
 packages must both be present in the build checkout.
 
+The installer marks only its downloaded Flutter SDK directory as a Git safe
+directory before invoking Flutter. This prevents Git's dubious-ownership check
+from stopping Flutter's version detection on Vercel build machines.
+
 The install command installs the pinned Flutter 3.47.2 Linux SDK, resolves the
 workspace dependencies, and the build command produces the static site in
 `build/web`. A fresh Vercel build downloads the Flutter SDK archive
