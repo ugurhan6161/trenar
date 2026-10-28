@@ -48,6 +48,12 @@ void main() {
                 ],
               },
             ];
+      json['category_settings'] = {
+        'services': {
+          'title': {'tr': 'Özel Hizmetler', 'en': 'Private Services'},
+          'visible': false,
+        },
+      };
 
       final decoded = TrenarSiteContent.fromJson(json);
 
@@ -68,6 +74,11 @@ void main() {
         decoded.customCategories.single.items.single.price?.text('tr'),
         '2.500 TL',
       );
+      expect(
+        decoded.categorySettings['services']?.title.text('en'),
+        'Private Services',
+      );
+      expect(decoded.categorySettings['services']?.visible, isFalse);
     });
 
     test('site text falls back to English when a translation is missing', () {

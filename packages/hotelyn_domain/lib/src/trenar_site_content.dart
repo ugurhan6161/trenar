@@ -15,6 +15,7 @@ class TrenarSiteContent {
     required this.packages,
     required this.bookingOptions,
     this.customCategories = const [],
+    this.categorySettings = const {},
   });
 
   factory TrenarSiteContent.fromJson(Map<String, dynamic> json) {
@@ -33,6 +34,7 @@ class TrenarSiteContent {
       packages: _items(json, 'packages'),
       bookingOptions: _texts(json, 'booking_options'),
       customCategories: _categories(json),
+      categorySettings: _categorySettings(json),
     );
   }
   final SiteText brand;
@@ -49,6 +51,7 @@ class TrenarSiteContent {
   final List<SiteContentItem> packages;
   final List<SiteText> bookingOptions;
   final List<SiteCustomCategory> customCategories;
+  final Map<String, SiteCategorySettings> categorySettings;
 
   static const defaultContent = TrenarSiteContent(
     brand: SiteText({'tr': 'TRENAR', 'en': 'TRENAR'}),
@@ -705,6 +708,10 @@ class TrenarSiteContent {
       'custom_categories': customCategories
           .map((category) => category.toJson())
           .toList(),
+    if (categorySettings.isNotEmpty)
+      'category_settings': categorySettings.map(
+        (id, settings) => MapEntry(id, settings.toJson()),
+      ),
   };
 
   static String _requiredString(Map<String, dynamic> json, String key) {
@@ -750,6 +757,22 @@ class TrenarSiteContent {
       }
       return SiteCustomCategory.fromJson(item);
     }).toList();
+  }
+
+  static Map<String, SiteCategorySettings> _categorySettings(
+    Map<String, dynamic> json,
+  ) {
+    final value = json['category_settings'];
+    if (value == null) return const {};
+    if (value is! Map<String, dynamic>) {
+      throw const FormatException('"category_settings" must be an object.');
+    }
+    return value.map((id, rawSettings) {
+      if (rawSettings is! Map<String, dynamic>) {
+        throw FormatException('Category settings for "$id" must be an object.');
+      }
+      return MapEntry(id, SiteCategorySettings.fromJson(rawSettings));
+    });
   }
 }
 
@@ -844,6 +867,32 @@ class SiteCustomCategory {
     'title': title.toJson(),
     if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
     'items': items.map((item) => item.toJson()).toList(),
+  };
+}
+
+class SiteCategorySettings {
+  const SiteCategorySettings({
+    required this.title,
+    this.visible = true,
+  });
+
+  factory SiteCategorySettings.fromJson(Map<String, dynamic> json) {
+    final visible = json['visible'];
+    if (visible != null && visible is! bool) {
+      throw const FormatException('"visible" must be a boolean.');
+    }
+    return SiteCategorySettings(
+      title: SiteText.fromJson(json['title'], 'title'),
+      visible: visible as bool? ?? true,
+    );
+  }
+
+  final SiteText title;
+  final bool visible;
+
+  Map<String, dynamic> toJson() => {
+    'title': title.toJson(),
+    'visible': visible,
   };
 }
 

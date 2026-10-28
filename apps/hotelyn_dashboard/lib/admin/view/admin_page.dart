@@ -24,6 +24,14 @@ const _locales = <String, String>{
   'ar': 'العربية',
 };
 
+const _builtInCategoryTitles = <String, SiteText>{
+  'services': SiteText({'tr': 'Hizmetler', 'en': 'Services'}),
+  'fleet': SiteText({'tr': 'Araç Filosu', 'en': 'Fleet'}),
+  'properties': SiteText({'tr': 'Konaklama', 'en': 'Stays'}),
+  'destinations': SiteText({'tr': 'Destinasyonlar', 'en': 'Destinations'}),
+  'packages': SiteText({'tr': 'Paketler', 'en': 'Packages'}),
+};
+
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
 
@@ -252,6 +260,7 @@ class _AdminPageState extends State<AdminPage> {
     List<SiteContentItem>? destinations,
     List<SiteContentItem>? packages,
     List<SiteCustomCategory>? customCategories,
+    Map<String, SiteCategorySettings>? categorySettings,
     List<SiteText>? bookingOptions,
   }) {
     return TrenarSiteContent(
@@ -268,6 +277,7 @@ class _AdminPageState extends State<AdminPage> {
       destinations: destinations ?? _content.destinations,
       packages: packages ?? _content.packages,
       customCategories: customCategories ?? _content.customCategories,
+      categorySettings: categorySettings ?? _content.categorySettings,
       bookingOptions: bookingOptions ?? _content.bookingOptions,
     );
   }
@@ -368,6 +378,45 @@ class _AdminPageState extends State<AdminPage> {
     }
     setState(() {
       _content = _copyContent(customCategories: categories);
+      _markChanged();
+    });
+  }
+
+  SiteCategorySettings _builtInCategorySettings(String id) =>
+      _content.categorySettings[id] ??
+      SiteCategorySettings(title: _builtInCategoryTitles[id]!);
+
+  Future<void> _editBuiltInCategory(String id) async {
+    final edited = await showDialog<SiteCategorySettings>(
+      context: context,
+      builder: (context) => _BuiltInCategoryDialog(
+        settings: _builtInCategorySettings(id),
+      ),
+    );
+    if (edited == null || !mounted) return;
+    setState(() {
+      _content = _copyContent(
+        categorySettings: {
+          ..._content.categorySettings,
+          id: edited,
+        },
+      );
+      _markChanged();
+    });
+  }
+
+  void _toggleBuiltInCategory(String id) {
+    final current = _builtInCategorySettings(id);
+    setState(() {
+      _content = _copyContent(
+        categorySettings: {
+          ..._content.categorySettings,
+          id: SiteCategorySettings(
+            title: current.title,
+            visible: !current.visible,
+          ),
+        },
+      );
       _markChanged();
     });
   }
@@ -1310,17 +1359,9 @@ class _AdminPageState extends State<AdminPage> {
 
   Widget _customCategoriesSection() {
     final categories = _content.customCategories;
-    if (categories.isEmpty) {
-      return _emptyState(
-        'Henüz özel kategori yok. Ürünlerinizi gruplamak için '
-        'kategori ekleyin.',
-        icon: Icons.category_outlined,
-        action: _editCustomCategory,
-      );
-    }
     return Column(
       children: [
-        for (final category in categories)
+        for (final entry in _builtInCategoryTitles.entries)
           Card(
             color: Colors.white,
             elevation: 0,
@@ -1329,67 +1370,123 @@ class _AdminPageState extends State<AdminPage> {
               borderRadius: BorderRadius.circular(17),
               side: const BorderSide(color: Color(0xFFE7E8EB)),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
+            child: ListTile(
+              title: Text(
+                _builtInCategorySettings(entry.key).title.text('tr'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: Text(
+                _builtInCategorySettings(entry.key).visible
+                    ? 'Varsayılan katalog kategorisi · sitede görünür'
+                    : 'Gizli · ürünler korunuyor',
+              ),
+              leading: const CircleAvatar(
+                child: Icon(Icons.category_outlined),
+              ),
+              trailing: Wrap(
+                spacing: 4,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(
-                      width: 58,
-                      height: 58,
-                      child: _imagePreview(category.imageUrl),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          category.title.text('tr'),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${category.items.length} ürün',
-                          style: const TextStyle(
-                            color: Color(0xFF777C86),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   IconButton(
-                    tooltip: 'Ürünleri yönet',
+                    tooltip: 'Kategori adını düzenle',
                     onPressed: _busy
                         ? null
-                        : () => _manageCustomCategory(category),
-                    icon: const Icon(Icons.inventory_2_outlined),
-                  ),
-                  IconButton(
-                    tooltip: 'Kategoriyi düzenle',
-                    onPressed: _busy
-                        ? null
-                        : () => _editCustomCategory(category: category),
+                        : () => _editBuiltInCategory(entry.key),
                     icon: const Icon(Icons.edit_outlined),
                   ),
                   IconButton(
-                    tooltip: 'Kategoriyi sil',
+                    tooltip: _builtInCategorySettings(entry.key).visible
+                        ? 'Kategoriyi gizle'
+                        : 'Kategoriyi göster',
                     onPressed: _busy
                         ? null
-                        : () => _deleteCustomCategory(category),
-                    color: const Color(0xFFB34343),
-                    icon: const Icon(Icons.delete_outline),
+                        : () => _toggleBuiltInCategory(entry.key),
+                    icon: Icon(
+                      _builtInCategorySettings(entry.key).visible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        if (categories.isEmpty)
+          _emptyState(
+            'Henüz özel kategori yok. Yeni bir kategori oluşturun.',
+            icon: Icons.category_outlined,
+            action: _editCustomCategory,
+          )
+        else
+          for (final category in categories)
+            Card(
+              color: Colors.white,
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(17),
+                side: const BorderSide(color: Color(0xFFE7E8EB)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 58,
+                        height: 58,
+                        child: _imagePreview(category.imageUrl),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category.title.text('tr'),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${category.items.length} ürün',
+                            style: const TextStyle(
+                              color: Color(0xFF777C86),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Ürünleri yönet',
+                      onPressed: _busy
+                          ? null
+                          : () => _manageCustomCategory(category),
+                      icon: const Icon(Icons.inventory_2_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Kategoriyi düzenle',
+                      onPressed: _busy
+                          ? null
+                          : () => _editCustomCategory(category: category),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Kategoriyi sil',
+                      onPressed: _busy
+                          ? null
+                          : () => _deleteCustomCategory(category),
+                      color: const Color(0xFFB34343),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              ),
+            ),
       ],
     );
   }
@@ -2045,6 +2142,113 @@ class _CatalogItemDialogState extends State<_CatalogItemDialog> {
           child: Icon(Icons.broken_image_outlined, color: Color(0xFF8F6826)),
         ),
       ),
+    );
+  }
+}
+
+class _BuiltInCategoryDialog extends StatefulWidget {
+  const _BuiltInCategoryDialog({required this.settings});
+
+  final SiteCategorySettings settings;
+
+  @override
+  State<_BuiltInCategoryDialog> createState() => _BuiltInCategoryDialogState();
+}
+
+class _BuiltInCategoryDialogState extends State<_BuiltInCategoryDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final Map<String, TextEditingController> _controllers = {};
+  late bool _visible;
+
+  @override
+  void initState() {
+    super.initState();
+    _visible = widget.settings.visible;
+    for (final locale in _locales.keys) {
+      _controllers[locale] = TextEditingController(
+        text:
+            widget.settings.title.translations[locale] ??
+            widget.settings.title.text(locale),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Kategoriyi düzenle'),
+      content: SizedBox(
+        width: 520,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final locale in _locales.entries) ...[
+                  TextFormField(
+                    controller: _controllers[locale.key],
+                    textDirection: locale.key == 'ar'
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    decoration: InputDecoration(
+                      labelText: 'Kategori adı · ${locale.value}',
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: locale.key == 'tr'
+                        ? (value) => value == null || value.trim().isEmpty
+                              ? 'Türkçe kategori adı gerekli.'
+                              : null
+                        : null,
+                  ),
+                  if (locale.key != 'ar') const SizedBox(height: 12),
+                ],
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _visible,
+                  title: const Text('Müşteri sitesinde göster'),
+                  subtitle: const Text(
+                    'Kapatıldığında kategori gizlenir; ürünler silinmez.',
+                  ),
+                  onChanged: (value) => setState(() => _visible = value),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Vazgeç'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.pop(
+              context,
+              SiteCategorySettings(
+                title: SiteText({
+                  for (final locale in _locales.keys)
+                    if (_controllers[locale]!.text.trim().isNotEmpty)
+                      locale: _controllers[locale]!.text.trim(),
+                }),
+                visible: _visible,
+              ),
+            );
+          },
+          icon: const Icon(Icons.check, size: 18),
+          label: const Text('Kaydet'),
+        ),
+      ],
     );
   }
 }

@@ -28,14 +28,7 @@ class TrenarCatalogEntry {
 
   String label(SiteStrings strings) => customCategory != null
       ? customCategory!.title.text(strings.languageCode)
-      : switch (category) {
-          TrenarCatalogCategory.services => strings.text('services'),
-          TrenarCatalogCategory.packages => strings.text('packages'),
-          TrenarCatalogCategory.fleet => strings.text('fleet'),
-          TrenarCatalogCategory.properties => strings.text('properties'),
-          TrenarCatalogCategory.destinations => strings.text('destinations'),
-          TrenarCatalogCategory.custom => strings.text('services'),
-        };
+      : catalogCategoryTitle(content, category, strings);
 
   IconData get icon => switch (category) {
     TrenarCatalogCategory.services => Icons.room_service_outlined,
@@ -132,6 +125,21 @@ class TrenarCatalogEntry {
     return null;
   }
 }
+
+String catalogCategoryTitle(
+  TrenarSiteContent content,
+  TrenarCatalogCategory category,
+  SiteStrings strings,
+) =>
+    content.categorySettings[category.name]?.title.text(strings.languageCode) ??
+    switch (category) {
+      TrenarCatalogCategory.services => strings.text('services'),
+      TrenarCatalogCategory.packages => strings.text('packages'),
+      TrenarCatalogCategory.fleet => strings.text('fleet'),
+      TrenarCatalogCategory.properties => strings.text('properties'),
+      TrenarCatalogCategory.destinations => strings.text('destinations'),
+      TrenarCatalogCategory.custom => strings.text('services'),
+    };
 
 class TrenarBookingArguments {
   const TrenarBookingArguments({required this.content, this.entry});

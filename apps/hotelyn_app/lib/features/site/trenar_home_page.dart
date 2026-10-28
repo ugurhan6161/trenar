@@ -132,6 +132,7 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
           ),
           _SiteMenuButton(
             compact: compactNavigation,
+            content: _content,
             strings: strings,
             onSelected: _handleMenuAction,
           ),
@@ -167,26 +168,20 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
                           customCategory: destination.customCategory,
                         ),
                         destinations: [
-                          _CategoryDestination(
-                            label: strings.text('services'),
-                            category: TrenarCatalogCategory.services,
-                          ),
-                          _CategoryDestination(
-                            label: strings.text('packages'),
-                            category: TrenarCatalogCategory.packages,
-                          ),
-                          _CategoryDestination(
-                            label: strings.text('fleet'),
-                            category: TrenarCatalogCategory.fleet,
-                          ),
-                          _CategoryDestination(
-                            label: strings.text('properties'),
-                            category: TrenarCatalogCategory.properties,
-                          ),
-                          _CategoryDestination(
-                            label: strings.text('destinations'),
-                            category: TrenarCatalogCategory.destinations,
-                          ),
+                          for (final category in TrenarCatalogCategory.values)
+                            if (category != TrenarCatalogCategory.custom &&
+                                _content
+                                        .categorySettings[category.name]
+                                        ?.visible !=
+                                    false)
+                              _CategoryDestination(
+                                label: catalogCategoryTitle(
+                                  _content,
+                                  category,
+                                  strings,
+                                ),
+                                category: category,
+                              ),
                           for (final category in _content.customCategories)
                             _CategoryDestination(
                               label: category.title.text(locale),
@@ -196,66 +191,96 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
                         ],
                       ),
                       const SizedBox(height: 32),
-                      _CatalogSection(
-                        title: strings.text('services'),
-                        category: TrenarCatalogCategory.services,
-                        content: _content,
-                        items: _content.services,
-                        locale: locale,
-                        onOpenDetails: _openCatalogEntry,
-                        strings: strings,
-                        onViewAll: () =>
-                            _openCategoryPage(TrenarCatalogCategory.services),
-                      ),
-                      const SizedBox(height: 28),
-                      _CatalogSection(
-                        title: strings.text('packages'),
-                        category: TrenarCatalogCategory.packages,
-                        content: _content,
-                        items: _content.packages,
-                        locale: locale,
-                        onOpenDetails: _openCatalogEntry,
-                        strings: strings,
-                        onViewAll: () =>
-                            _openCategoryPage(TrenarCatalogCategory.packages),
-                      ),
-                      const SizedBox(height: 28),
-                      _CatalogSection(
-                        title: strings.text('fleet'),
-                        category: TrenarCatalogCategory.fleet,
-                        content: _content,
-                        items: _content.fleet,
-                        locale: locale,
-                        onOpenDetails: _openCatalogEntry,
-                        strings: strings,
-                        onViewAll: () =>
-                            _openCategoryPage(TrenarCatalogCategory.fleet),
-                      ),
-                      const SizedBox(height: 28),
-                      _CatalogSection(
-                        title: strings.text('properties'),
-                        category: TrenarCatalogCategory.properties,
-                        content: _content,
-                        items: _content.properties,
-                        locale: locale,
-                        onOpenDetails: _openCatalogEntry,
-                        strings: strings,
-                        onViewAll: () =>
-                            _openCategoryPage(TrenarCatalogCategory.properties),
-                      ),
-                      const SizedBox(height: 28),
-                      _CatalogSection(
-                        title: strings.text('destinations'),
-                        category: TrenarCatalogCategory.destinations,
-                        content: _content,
-                        items: _content.destinations,
-                        locale: locale,
-                        onOpenDetails: _openCatalogEntry,
-                        strings: strings,
-                        onViewAll: () => _openCategoryPage(
-                          TrenarCatalogCategory.destinations,
+                      if (_content.categorySettings['services']?.visible !=
+                          false)
+                        _CatalogSection(
+                          title: catalogCategoryTitle(
+                            _content,
+                            TrenarCatalogCategory.services,
+                            strings,
+                          ),
+                          category: TrenarCatalogCategory.services,
+                          content: _content,
+                          items: _content.services,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () =>
+                              _openCategoryPage(TrenarCatalogCategory.services),
                         ),
-                      ),
+                      const SizedBox(height: 28),
+                      if (_content.categorySettings['packages']?.visible !=
+                          false)
+                        _CatalogSection(
+                          title: catalogCategoryTitle(
+                            _content,
+                            TrenarCatalogCategory.packages,
+                            strings,
+                          ),
+                          category: TrenarCatalogCategory.packages,
+                          content: _content,
+                          items: _content.packages,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () =>
+                              _openCategoryPage(TrenarCatalogCategory.packages),
+                        ),
+                      const SizedBox(height: 28),
+                      if (_content.categorySettings['fleet']?.visible != false)
+                        _CatalogSection(
+                          title: catalogCategoryTitle(
+                            _content,
+                            TrenarCatalogCategory.fleet,
+                            strings,
+                          ),
+                          category: TrenarCatalogCategory.fleet,
+                          content: _content,
+                          items: _content.fleet,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () =>
+                              _openCategoryPage(TrenarCatalogCategory.fleet),
+                        ),
+                      const SizedBox(height: 28),
+                      if (_content.categorySettings['properties']?.visible !=
+                          false)
+                        _CatalogSection(
+                          title: catalogCategoryTitle(
+                            _content,
+                            TrenarCatalogCategory.properties,
+                            strings,
+                          ),
+                          category: TrenarCatalogCategory.properties,
+                          content: _content,
+                          items: _content.properties,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () => _openCategoryPage(
+                            TrenarCatalogCategory.properties,
+                          ),
+                        ),
+                      const SizedBox(height: 28),
+                      if (_content.categorySettings['destinations']?.visible !=
+                          false)
+                        _CatalogSection(
+                          title: catalogCategoryTitle(
+                            _content,
+                            TrenarCatalogCategory.destinations,
+                            strings,
+                          ),
+                          category: TrenarCatalogCategory.destinations,
+                          content: _content,
+                          items: _content.destinations,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () => _openCategoryPage(
+                            TrenarCatalogCategory.destinations,
+                          ),
+                        ),
                       for (final category in _content.customCategories) ...[
                         const SizedBox(height: 28),
                         _CatalogSection(
@@ -396,11 +421,13 @@ enum _SiteMenuAction {
 class _SiteMenuButton extends StatelessWidget {
   const _SiteMenuButton({
     required this.compact,
+    required this.content,
     required this.strings,
     required this.onSelected,
   });
 
   final bool compact;
+  final TrenarSiteContent content;
   final SiteStrings strings;
   final ValueChanged<_SiteMenuAction> onSelected;
 
@@ -435,33 +462,47 @@ class _SiteMenuButton extends StatelessWidget {
           ),
     itemBuilder: (context) => [
       for (final (action, label, icon) in _options)
-        PopupMenuItem(
-          value: action,
-          child: Row(
-            children: [
-              _menuActionIcon(action, icon),
-              const SizedBox(width: 12),
-              Text(strings.text(label)),
-            ],
+        if (_menuCategory(action) == null ||
+            content.categorySettings[_menuCategory(action)!.name]?.visible !=
+                false)
+          PopupMenuItem(
+            value: action,
+            child: Row(
+              children: [
+                _menuActionIcon(action, icon),
+                const SizedBox(width: 12),
+                Text(
+                  _menuCategory(action) == null
+                      ? strings.text(label)
+                      : catalogCategoryTitle(
+                          content,
+                          _menuCategory(action)!,
+                          strings,
+                        ),
+                ),
+              ],
+            ),
           ),
-        ),
     ],
   );
 }
 
 Widget _menuActionIcon(_SiteMenuAction action, IconData icon) {
-  final category = switch (action) {
-    _SiteMenuAction.services => TrenarCatalogCategory.services,
-    _SiteMenuAction.packages => TrenarCatalogCategory.packages,
-    _SiteMenuAction.fleet => TrenarCatalogCategory.fleet,
-    _SiteMenuAction.properties => TrenarCatalogCategory.properties,
-    _SiteMenuAction.destinations => TrenarCatalogCategory.destinations,
-    _ => null,
-  };
+  final category = _menuCategory(action);
   return category == null
       ? Icon(icon, size: 19, color: TrenarBrand.goldDark)
       : TrenarCategoryIcon(category: category, size: 30);
 }
+
+TrenarCatalogCategory? _menuCategory(_SiteMenuAction action) =>
+    switch (action) {
+      _SiteMenuAction.services => TrenarCatalogCategory.services,
+      _SiteMenuAction.packages => TrenarCatalogCategory.packages,
+      _SiteMenuAction.fleet => TrenarCatalogCategory.fleet,
+      _SiteMenuAction.properties => TrenarCatalogCategory.properties,
+      _SiteMenuAction.destinations => TrenarCatalogCategory.destinations,
+      _ => null,
+    };
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection({

@@ -49,6 +49,7 @@ class TrenarCategoryPage extends StatelessWidget {
           )
         : entries.first.coverImage(fit: BoxFit.cover);
     final title = categoryTitle(
+      arguments.content,
       category,
       strings,
       customCategory: arguments.customCategory,
@@ -188,14 +189,21 @@ class TrenarCategoryPage extends StatelessWidget {
     );
   }
 
-  List<SiteContentItem> get _items => switch (arguments.category) {
-    TrenarCatalogCategory.services => arguments.content.services,
-    TrenarCatalogCategory.packages => arguments.content.packages,
-    TrenarCatalogCategory.fleet => arguments.content.fleet,
-    TrenarCatalogCategory.properties => arguments.content.properties,
-    TrenarCatalogCategory.destinations => arguments.content.destinations,
-    TrenarCatalogCategory.custom => arguments.customCategory?.items ?? const [],
-  };
+  List<SiteContentItem> get _items {
+    if (arguments.content.categorySettings[arguments.category.name]?.visible ==
+        false) {
+      return const [];
+    }
+    return switch (arguments.category) {
+      TrenarCatalogCategory.services => arguments.content.services,
+      TrenarCatalogCategory.packages => arguments.content.packages,
+      TrenarCatalogCategory.fleet => arguments.content.fleet,
+      TrenarCatalogCategory.properties => arguments.content.properties,
+      TrenarCatalogCategory.destinations => arguments.content.destinations,
+      TrenarCatalogCategory.custom =>
+        arguments.customCategory?.items ?? const [],
+    };
+  }
 }
 
 class _CategoryCard extends StatelessWidget {
@@ -368,16 +376,10 @@ class _EmptyCategory extends StatelessWidget {
 }
 
 String categoryTitle(
+  TrenarSiteContent content,
   TrenarCatalogCategory category,
   SiteStrings strings, {
   SiteCustomCategory? customCategory,
 }) =>
     customCategory?.title.text(strings.languageCode) ??
-    switch (category) {
-      TrenarCatalogCategory.services => strings.text('services'),
-      TrenarCatalogCategory.packages => strings.text('packages'),
-      TrenarCatalogCategory.fleet => strings.text('fleet'),
-      TrenarCatalogCategory.properties => strings.text('properties'),
-      TrenarCatalogCategory.destinations => strings.text('destinations'),
-      TrenarCatalogCategory.custom => strings.text('services'),
-    };
+    catalogCategoryTitle(content, category, strings);
