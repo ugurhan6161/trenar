@@ -1,0 +1,189 @@
+name: hotelyn
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  MELOS_SDK_PATH: auto
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-pull-request:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
+
+  workspace-quality:
+    name: Workspace Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Activate Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Format check
+        run: melos run format
+
+      - name: Analyze workspace
+        run: melos run analyze
+
+      - name: Build generated code
+        run: melos run build
+
+      - name: Verify clean working tree
+        run: |
+          git diff --exit-code
+          if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
+            echo "::error::Untracked files detected in working tree after build:"
+            git status --porcelain=v1 --untracked-files=all
+            exit 1
+          fi
+
+  workspace-tests:
+    name: Workspace Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Activate Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Run tests across workspace
+        run: melos run test
+
+  backend-build:
+    name: Backend Server Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Activate Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Activate Dart Frog CLI
+        run: dart pub global activate dart_frog_cli
+
+      - name: Build and compile Dart Frog server
+        working-directory: backend
+        run: |
+          dart_frog build
+          ln -s build/bin bin
+          dart compile exe bin/server.dart
+
+  app-builds:
+    name: App Builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Activate Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Build dashboard web app
+        working-directory: apps/hotelyn_dashboard
+        run: flutter build web --no-pub
+
+      - name: Build mobile app debug APK
+        working-directory: apps/hotelyn_app
+        run: flutter build apk --debug --flavor development --no-pub
+
+  # BE-603: proves RLS tenant isolation (and the other DB behaviours) on every PR
+  # that touches migrations, policies, seed, or the pgTAP tests. The path filter
+  # keeps it a no-op for app-only PRs while guaranteeing coverage when the schema
+  # or policies change — the exact condition the ticket requires.
+  db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # This job only reads the checkout to run the pgTAP suite; it never
+          # pushes. Keep the GITHUB_TOKEN out of the local git config.
+          persist-credentials: false
+
+      - id: changes
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            supabase:
+              - 'supabase/**'
+
+      - if: steps.changes.outputs.supabase == 'true'
+        uses: supabase/setup-cli@v3
+        with:
+          # Pinned (not latest) so an unrelated CLI release can't turn a green
+          # PR red between runs; bump deliberately.
+          version: 2.109.1
+
+      - name: Start Supabase and run the pgTAP suite
+        if: steps.changes.outputs.supabase == 'true'
+        run: |
+          supabase start
+          supabase test db

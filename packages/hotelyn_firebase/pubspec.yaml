@@ -1,0 +1,19 @@
+name: hotelyn_firebase
+description: Shared Firebase access for Hotelyn apps.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore: ^7.1.0
+  firebase_auth: ^7.0.1
+  firebase_core: ^5.1.0
+  hotelyn_domain:
+    path: ../hotelyn_domain
+
+dev_dependencies:
+  very_good_analysis: ^11.0.0

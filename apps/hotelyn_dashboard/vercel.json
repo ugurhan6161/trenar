@@ -1,0 +1,5 @@
+{
+  "installCommand": "bash ../../scripts/vercel_flutter_install.sh",
+  "buildCommand": "bash vercel-build.sh",
+  "outputDirectory": "build/web"
+}

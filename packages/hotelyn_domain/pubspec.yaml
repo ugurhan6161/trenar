@@ -1,0 +1,20 @@
+name: hotelyn_domain
+description: "Domain entities and repository interfaces for Hotelyn."
+
+version: 0.1.0+1
+
+resolution: workspace
+
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+
+dependencies:
+  equatable: ^2.0.8
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  build_runner: ^2.15.1
+  json_serializable: ^6.11.2
+  # Compatible with the test runner bundled with the Flutter SDK (test_api 0.7.12); see #225.
+  test: ^1.25.0
+  very_good_analysis: ^11.0.0
