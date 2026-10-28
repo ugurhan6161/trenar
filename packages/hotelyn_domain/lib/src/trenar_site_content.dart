@@ -14,6 +14,7 @@ class TrenarSiteContent {
     required this.destinations,
     required this.packages,
     required this.bookingOptions,
+    this.customCategories = const [],
   });
 
   factory TrenarSiteContent.fromJson(Map<String, dynamic> json) {
@@ -24,13 +25,14 @@ class TrenarSiteContent {
       phone: _requiredString(json, 'phone'),
       email: _requiredString(json, 'email'),
       address: _requiredString(json, 'address'),
-      license: SiteText({'tr': '', 'en': '', 'ar': ''}),
+      license: const SiteText({'tr': '', 'en': '', 'ar': ''}),
       services: _items(json, 'services'),
       fleet: _items(json, 'fleet'),
       properties: _items(json, 'properties'),
       destinations: _items(json, 'destinations'),
       packages: _items(json, 'packages'),
       bookingOptions: _texts(json, 'booking_options'),
+      customCategories: _categories(json),
     );
   }
   final SiteText brand;
@@ -46,6 +48,7 @@ class TrenarSiteContent {
   final List<SiteContentItem> destinations;
   final List<SiteContentItem> packages;
   final List<SiteText> bookingOptions;
+  final List<SiteCustomCategory> customCategories;
 
   static const defaultContent = TrenarSiteContent(
     brand: SiteText({'tr': 'TRENAR', 'en': 'TRENAR'}),
@@ -698,6 +701,10 @@ class TrenarSiteContent {
     'destinations': destinations.map((item) => item.toJson()).toList(),
     'packages': packages.map((item) => item.toJson()).toList(),
     'booking_options': bookingOptions.map((option) => option.toJson()).toList(),
+    if (customCategories.isNotEmpty)
+      'custom_categories': customCategories
+          .map((category) => category.toJson())
+          .toList(),
   };
 
   static String _requiredString(Map<String, dynamic> json, String key) {
@@ -728,6 +735,22 @@ class TrenarSiteContent {
     }
     return value.map((item) => SiteText.fromJson(item, key)).toList();
   }
+
+  static List<SiteCustomCategory> _categories(Map<String, dynamic> json) {
+    final value = json['custom_categories'];
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('"custom_categories" must be a list.');
+    }
+    return value.map((item) {
+      if (item is! Map<String, dynamic>) {
+        throw const FormatException(
+          'Every "custom_categories" item must be an object.',
+        );
+      }
+      return SiteCustomCategory.fromJson(item);
+    }).toList();
+  }
 }
 
 class SiteContentItem {
@@ -738,6 +761,7 @@ class SiteContentItem {
     this.price,
     this.badge,
     this.features = const [],
+    this.imageUrl,
   });
 
   factory SiteContentItem.fromJson(Map<String, dynamic> json) {
@@ -760,6 +784,7 @@ class SiteContentItem {
       features: (features as List<dynamic>? ?? const [])
           .map((item) => SiteText.fromJson(item, 'feature'))
           .toList(),
+      imageUrl: _optionalString(json, 'image_url'),
     );
   }
 
@@ -769,6 +794,7 @@ class SiteContentItem {
   final SiteText? price;
   final SiteText? badge;
   final List<SiteText> features;
+  final String? imageUrl;
 
   Map<String, dynamic> toJson() => {
     'title': title.toJson(),
@@ -778,6 +804,46 @@ class SiteContentItem {
     if (badge != null) 'badge': badge!.toJson(),
     if (features.isNotEmpty)
       'features': features.map((feature) => feature.toJson()).toList(),
+    if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
+  };
+}
+
+class SiteCustomCategory {
+  const SiteCustomCategory({
+    required this.id,
+    required this.title,
+    this.imageUrl,
+    this.items = const [],
+  });
+
+  factory SiteCustomCategory.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    if (rawItems != null && rawItems is! List) {
+      throw const FormatException('"items" must be a list.');
+    }
+    return SiteCustomCategory(
+      id: _requiredValue(json, 'id'),
+      title: SiteText.fromJson(json['title'], 'title'),
+      imageUrl: _optionalString(json, 'image_url'),
+      items: (rawItems as List<dynamic>? ?? const []).map((item) {
+        if (item is! Map<String, dynamic>) {
+          throw const FormatException('Every category item must be an object.');
+        }
+        return SiteContentItem.fromJson(item);
+      }).toList(),
+    );
+  }
+
+  final String id;
+  final SiteText title;
+  final String? imageUrl;
+  final List<SiteContentItem> items;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title.toJson(),
+    if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
+    'items': items.map((item) => item.toJson()).toList(),
   };
 }
 
@@ -807,4 +873,22 @@ class SiteText {
       translations[locale] ?? translations['en'] ?? translations.values.first;
 
   Map<String, String> toJson() => Map<String, String>.of(translations);
+}
+
+String? _optionalString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! String) {
+    throw FormatException('"$key" must be a string.');
+  }
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+String _requiredValue(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('"$key" must be a non-empty string.');
+  }
+  return value.trim();
 }

@@ -49,8 +49,7 @@ class TrenarBookingPage extends StatelessWidget {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.asset(
-                            entry.coverAsset,
+                          entry.coverImage(
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
                                 ColoredBox(color: accent),

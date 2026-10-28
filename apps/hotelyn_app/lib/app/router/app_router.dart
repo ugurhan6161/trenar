@@ -34,7 +34,12 @@ class AppRouter {
           );
           if (arguments is! TrenarCategoryArguments ||
               category == null ||
-              arguments.category != category) {
+              arguments.category != category ||
+              (category == TrenarCatalogCategory.custom &&
+                  (arguments.customCategory == null ||
+                      !arguments.content.customCategories.any(
+                        (item) => item.id == arguments.customCategory!.id,
+                      )))) {
             return '/home';
           }
           return null;
@@ -57,7 +62,12 @@ class AppRouter {
           if (entry is! TrenarCatalogEntry ||
               category == null ||
               entry.category != category ||
-              entry.index != index) {
+              entry.index != index ||
+              (category == TrenarCatalogCategory.custom &&
+                  (entry.customCategory == null ||
+                      !entry.content.customCategories.any(
+                        (item) => item.id == entry.customCategory!.id,
+                      )))) {
             return '/home';
           }
           return null;

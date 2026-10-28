@@ -141,132 +141,161 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
       body: _contentLoading
           ? const TrenarHomeLoadingSkeleton()
           : SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_contentUnavailable)
-                  _ContentWarning(message: strings.text('contentUnavailable')),
-                _HeroSection(
-                  content: _content,
-                  locale: locale,
-                  strings: strings,
-                  onBook: () => _requestBooking(strings.text('services')),
-                ),
-                const SizedBox(height: 28),
-                _SectionHeading(title: strings.text('exploreCategories')),
-                const SizedBox(height: 14),
-                _CategoryShortcuts(
-                  onSelect: _openCategoryPage,
-                  destinations: [
-                    _CategoryDestination(
-                      label: strings.text('services'),
-                      category: TrenarCatalogCategory.services,
-                    ),
-                    _CategoryDestination(
-                      label: strings.text('packages'),
-                      category: TrenarCatalogCategory.packages,
-                    ),
-                    _CategoryDestination(
-                      label: strings.text('fleet'),
-                      category: TrenarCatalogCategory.fleet,
-                    ),
-                    _CategoryDestination(
-                      label: strings.text('properties'),
-                      category: TrenarCatalogCategory.properties,
-                    ),
-                    _CategoryDestination(
-                      label: strings.text('destinations'),
-                      category: TrenarCatalogCategory.destinations,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                _CatalogSection(
-                  title: strings.text('services'),
-                  category: TrenarCatalogCategory.services,
-                  content: _content,
-                  items: _content.services,
-                  locale: locale,
-                  onOpenDetails: _openCatalogEntry,
-                  strings: strings,
-                  onViewAll: () =>
-                      _openCategoryPage(TrenarCatalogCategory.services),
-                ),
-                const SizedBox(height: 28),
-                _CatalogSection(
-                  title: strings.text('packages'),
-                  category: TrenarCatalogCategory.packages,
-                  content: _content,
-                  items: _content.packages,
-                  locale: locale,
-                  onOpenDetails: _openCatalogEntry,
-                  strings: strings,
-                  onViewAll: () =>
-                      _openCategoryPage(TrenarCatalogCategory.packages),
-                ),
-                const SizedBox(height: 28),
-                _CatalogSection(
-                  title: strings.text('fleet'),
-                  category: TrenarCatalogCategory.fleet,
-                  content: _content,
-                  items: _content.fleet,
-                  locale: locale,
-                  onOpenDetails: _openCatalogEntry,
-                  strings: strings,
-                  onViewAll: () =>
-                      _openCategoryPage(TrenarCatalogCategory.fleet),
-                ),
-                const SizedBox(height: 28),
-                _CatalogSection(
-                  title: strings.text('properties'),
-                  category: TrenarCatalogCategory.properties,
-                  content: _content,
-                  items: _content.properties,
-                  locale: locale,
-                  onOpenDetails: _openCatalogEntry,
-                  strings: strings,
-                  onViewAll: () =>
-                      _openCategoryPage(TrenarCatalogCategory.properties),
-                ),
-                const SizedBox(height: 28),
-                _CatalogSection(
-                  title: strings.text('destinations'),
-                  category: TrenarCatalogCategory.destinations,
-                  content: _content,
-                  items: _content.destinations,
-                  locale: locale,
-                  onOpenDetails: _openCatalogEntry,
-                  strings: strings,
-                  onViewAll: () =>
-                      _openCategoryPage(TrenarCatalogCategory.destinations),
-                ),
-                const SizedBox(height: 32),
-                ClarityMask(
-                  child: Container(
-                    key: _reservationKey,
-                    child: TrenarBookingForm(
-                      content: _content,
-                      initialService: _selectedService,
-                      locale: locale,
-                      strings: strings,
-                    ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_contentUnavailable)
+                        _ContentWarning(
+                          message: strings.text('contentUnavailable'),
+                        ),
+                      _HeroSection(
+                        content: _content,
+                        locale: locale,
+                        strings: strings,
+                        onBook: () => _requestBooking(strings.text('services')),
+                      ),
+                      const SizedBox(height: 28),
+                      _SectionHeading(title: strings.text('exploreCategories')),
+                      const SizedBox(height: 14),
+                      _CategoryShortcuts(
+                        onSelect: (destination) => _openCategoryPage(
+                          destination.category,
+                          customCategory: destination.customCategory,
+                        ),
+                        destinations: [
+                          _CategoryDestination(
+                            label: strings.text('services'),
+                            category: TrenarCatalogCategory.services,
+                          ),
+                          _CategoryDestination(
+                            label: strings.text('packages'),
+                            category: TrenarCatalogCategory.packages,
+                          ),
+                          _CategoryDestination(
+                            label: strings.text('fleet'),
+                            category: TrenarCatalogCategory.fleet,
+                          ),
+                          _CategoryDestination(
+                            label: strings.text('properties'),
+                            category: TrenarCatalogCategory.properties,
+                          ),
+                          _CategoryDestination(
+                            label: strings.text('destinations'),
+                            category: TrenarCatalogCategory.destinations,
+                          ),
+                          for (final category in _content.customCategories)
+                            _CategoryDestination(
+                              label: category.title.text(locale),
+                              category: TrenarCatalogCategory.custom,
+                              customCategory: category,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _CatalogSection(
+                        title: strings.text('services'),
+                        category: TrenarCatalogCategory.services,
+                        content: _content,
+                        items: _content.services,
+                        locale: locale,
+                        onOpenDetails: _openCatalogEntry,
+                        strings: strings,
+                        onViewAll: () =>
+                            _openCategoryPage(TrenarCatalogCategory.services),
+                      ),
+                      const SizedBox(height: 28),
+                      _CatalogSection(
+                        title: strings.text('packages'),
+                        category: TrenarCatalogCategory.packages,
+                        content: _content,
+                        items: _content.packages,
+                        locale: locale,
+                        onOpenDetails: _openCatalogEntry,
+                        strings: strings,
+                        onViewAll: () =>
+                            _openCategoryPage(TrenarCatalogCategory.packages),
+                      ),
+                      const SizedBox(height: 28),
+                      _CatalogSection(
+                        title: strings.text('fleet'),
+                        category: TrenarCatalogCategory.fleet,
+                        content: _content,
+                        items: _content.fleet,
+                        locale: locale,
+                        onOpenDetails: _openCatalogEntry,
+                        strings: strings,
+                        onViewAll: () =>
+                            _openCategoryPage(TrenarCatalogCategory.fleet),
+                      ),
+                      const SizedBox(height: 28),
+                      _CatalogSection(
+                        title: strings.text('properties'),
+                        category: TrenarCatalogCategory.properties,
+                        content: _content,
+                        items: _content.properties,
+                        locale: locale,
+                        onOpenDetails: _openCatalogEntry,
+                        strings: strings,
+                        onViewAll: () =>
+                            _openCategoryPage(TrenarCatalogCategory.properties),
+                      ),
+                      const SizedBox(height: 28),
+                      _CatalogSection(
+                        title: strings.text('destinations'),
+                        category: TrenarCatalogCategory.destinations,
+                        content: _content,
+                        items: _content.destinations,
+                        locale: locale,
+                        onOpenDetails: _openCatalogEntry,
+                        strings: strings,
+                        onViewAll: () => _openCategoryPage(
+                          TrenarCatalogCategory.destinations,
+                        ),
+                      ),
+                      for (final category in _content.customCategories) ...[
+                        const SizedBox(height: 28),
+                        _CatalogSection(
+                          title: category.title.text(locale),
+                          category: TrenarCatalogCategory.custom,
+                          customCategory: category,
+                          content: _content,
+                          items: category.items,
+                          locale: locale,
+                          onOpenDetails: _openCatalogEntry,
+                          strings: strings,
+                          onViewAll: () => _openCategoryPage(
+                            TrenarCatalogCategory.custom,
+                            customCategory: category,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+                      ClarityMask(
+                        child: Container(
+                          key: _reservationKey,
+                          child: TrenarBookingForm(
+                            content: _content,
+                            initialService: _selectedService,
+                            locale: locale,
+                            strings: strings,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _ContactFooter(
+                        key: _contactKey,
+                        content: _content,
+                        strings: strings,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 28),
-                _ContactFooter(
-                  key: _contactKey,
-                  content: _content,
-                  strings: strings,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -290,11 +319,18 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
     );
   }
 
-  void _openCategoryPage(TrenarCatalogCategory category) {
+  void _openCategoryPage(
+    TrenarCatalogCategory category, {
+    SiteCustomCategory? customCategory,
+  }) {
     unawaited(
       context.push<void>(
         '/catalog/${category.name}',
-        extra: TrenarCategoryArguments(content: _content, category: category),
+        extra: TrenarCategoryArguments(
+          content: _content,
+          category: category,
+          customCategory: customCategory,
+        ),
       ),
     );
   }
@@ -778,10 +814,12 @@ class _CategoryDestination {
   const _CategoryDestination({
     required this.label,
     required this.category,
+    this.customCategory,
   });
 
   final String label;
   final TrenarCatalogCategory category;
+  final SiteCustomCategory? customCategory;
 }
 
 class _CategoryShortcuts extends StatelessWidget {
@@ -791,7 +829,7 @@ class _CategoryShortcuts extends StatelessWidget {
   });
 
   final List<_CategoryDestination> destinations;
-  final ValueChanged<TrenarCatalogCategory> onSelect;
+  final ValueChanged<_CategoryDestination> onSelect;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -812,7 +850,7 @@ class _CategoryShortcuts extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () => onSelect(destination.category),
+                  onTap: () => onSelect(destination),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -861,6 +899,7 @@ class _CatalogSection extends StatelessWidget {
     required this.onOpenDetails,
     required this.onViewAll,
     required this.strings,
+    this.customCategory,
   });
 
   final String title;
@@ -871,6 +910,7 @@ class _CatalogSection extends StatelessWidget {
   final ValueChanged<TrenarCatalogEntry> onOpenDetails;
   final VoidCallback onViewAll;
   final SiteStrings strings;
+  final SiteCustomCategory? customCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -909,6 +949,7 @@ class _CatalogSection extends StatelessWidget {
                     category: category,
                     index: index,
                     item: items[index],
+                    customCategory: customCategory,
                   );
                   return SizedBox(
                     width: cardWidth,
@@ -967,8 +1008,7 @@ class _CatalogCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                entry.coverAsset,
+              entry.coverImage(
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => const ColoredBox(
                   color: TrenarBrand.darkSurface,

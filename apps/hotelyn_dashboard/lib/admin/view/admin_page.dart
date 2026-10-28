@@ -13,6 +13,8 @@ enum _AdminSection {
   properties,
   destinations,
   packages,
+  customCategories,
+  customCategoryItems,
   bookingOptions,
 }
 
@@ -43,6 +45,7 @@ class _AdminPageState extends State<AdminPage> {
   bool _statusIsError = false;
   bool _busy = false;
   bool _hasUnsavedChanges = false;
+  String? _activeCustomCategoryId;
 
   @override
   void dispose() {
@@ -248,6 +251,7 @@ class _AdminPageState extends State<AdminPage> {
     List<SiteContentItem>? properties,
     List<SiteContentItem>? destinations,
     List<SiteContentItem>? packages,
+    List<SiteCustomCategory>? customCategories,
     List<SiteText>? bookingOptions,
   }) {
     return TrenarSiteContent(
@@ -263,6 +267,7 @@ class _AdminPageState extends State<AdminPage> {
       properties: properties ?? _content.properties,
       destinations: destinations ?? _content.destinations,
       packages: packages ?? _content.packages,
+      customCategories: customCategories ?? _content.customCategories,
       bookingOptions: bookingOptions ?? _content.bookingOptions,
     );
   }
@@ -274,8 +279,17 @@ class _AdminPageState extends State<AdminPage> {
       _AdminSection.properties => _content.properties,
       _AdminSection.destinations => _content.destinations,
       _AdminSection.packages => _content.packages,
+      _AdminSection.customCategoryItems =>
+        _activeCustomCategory?.items ?? const [],
       _ => const [],
     };
+  }
+
+  SiteCustomCategory? get _activeCustomCategory {
+    for (final category in _content.customCategories) {
+      if (category.id == _activeCustomCategoryId) return category;
+    }
+    return null;
   }
 
   void _updateItems(
@@ -289,6 +303,20 @@ class _AdminPageState extends State<AdminPage> {
         _AdminSection.properties => _copyContent(properties: items),
         _AdminSection.destinations => _copyContent(destinations: items),
         _AdminSection.packages => _copyContent(packages: items),
+        _AdminSection.customCategoryItems => _copyContent(
+          customCategories: [
+            for (final category in _content.customCategories)
+              if (category.id == _activeCustomCategoryId)
+                SiteCustomCategory(
+                  id: category.id,
+                  title: category.title,
+                  imageUrl: category.imageUrl,
+                  items: items,
+                )
+              else
+                category,
+          ],
+        ),
         _ => _content,
       };
       _markChanged();
@@ -323,6 +351,53 @@ class _AdminPageState extends State<AdminPage> {
     if (!confirmed || !mounted) return;
     final items = List<SiteContentItem>.of(_itemsFor(section))..removeAt(index);
     _updateItems(section, items);
+  }
+
+  Future<void> _editCustomCategory({SiteCustomCategory? category}) async {
+    final edited = await showDialog<SiteCustomCategory>(
+      context: context,
+      builder: (context) => _CustomCategoryDialog(category: category),
+    );
+    if (edited == null || !mounted) return;
+    final categories = List<SiteCustomCategory>.of(_content.customCategories);
+    final index = categories.indexWhere((item) => item.id == edited.id);
+    if (index == -1) {
+      categories.add(edited);
+    } else {
+      categories[index] = edited;
+    }
+    setState(() {
+      _content = _copyContent(customCategories: categories);
+      _markChanged();
+    });
+  }
+
+  Future<void> _deleteCustomCategory(SiteCustomCategory category) async {
+    final confirmed = await _confirmDelete(
+      title: category.title.text('tr'),
+      message: 'Bu kategori ve içindeki tüm kayıtlar siteden kaldırılacak.',
+    );
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _content = _copyContent(
+        customCategories: _content.customCategories
+            .where((item) => item.id != category.id)
+            .toList(),
+      );
+      if (_activeCustomCategoryId == category.id) {
+        _activeCustomCategoryId = null;
+        _section = _AdminSection.customCategories;
+      }
+      _markChanged();
+    });
+  }
+
+  void _manageCustomCategory(SiteCustomCategory category) {
+    setState(() {
+      _activeCustomCategoryId = category.id;
+      _section = _AdminSection.customCategoryItems;
+      _searchController.clear();
+    });
   }
 
   Future<void> _editBookingOption({SiteText? option, int? index}) async {
@@ -657,7 +732,9 @@ class _AdminPageState extends State<AdminPage> {
               ),
             ),
           ),
-          for (final section in _AdminSection.values)
+          for (final section in _AdminSection.values.where(
+            (section) => section != _AdminSection.customCategoryItems,
+          ))
             _navigationItem(section, closeDrawer: closeDrawer),
           const Spacer(),
           Container(
@@ -755,6 +832,9 @@ class _AdminPageState extends State<AdminPage> {
     if (section == _AdminSection.bookingOptions) {
       return _content.bookingOptions.length;
     }
+    if (section == _AdminSection.customCategories) {
+      return _content.customCategories.length;
+    }
     if (section == _AdminSection.overview || section == _AdminSection.site) {
       return null;
     }
@@ -782,6 +862,7 @@ class _AdminPageState extends State<AdminPage> {
               switch (_section) {
                 _AdminSection.overview => _overview(),
                 _AdminSection.site => _siteSettings(),
+                _AdminSection.customCategories => _customCategoriesSection(),
                 _AdminSection.bookingOptions => _bookingOptions(),
                 _ => _catalogSection(),
               },
@@ -801,6 +882,10 @@ class _AdminPageState extends State<AdminPage> {
         'Marka, ana sayfa metinleri ve iletişim bilgilerini düzenleyin.',
       _AdminSection.bookingOptions =>
         'Rezervasyon formunda sunulan tercihleri yönetin.',
+      _AdminSection.customCategories =>
+        'Yeni katalog kategorileri oluşturun ve ürünlerini yönetin.',
+      _AdminSection.customCategoryItems =>
+        'Bu kategorideki ürünleri, görselleri ve fiyatları yönetin.',
       _ =>
         '${_sectionTitle(section)} kayıtlarını ekleyin, düzenleyin veya '
             'kaldırın.',
@@ -836,6 +921,12 @@ class _AdminPageState extends State<AdminPage> {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Seçenek ekle'),
           ),
+        if (section == _AdminSection.customCategories)
+          FilledButton.icon(
+            onPressed: _busy ? null : _editCustomCategory,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Kategori ekle'),
+          ),
       ],
     );
   }
@@ -847,6 +938,10 @@ class _AdminPageState extends State<AdminPage> {
         _content.properties.length +
         _content.destinations.length +
         _content.packages.length;
+    final customItemCount = _content.customCategories.fold<int>(
+      0,
+      (count, category) => count + category.items.length,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -867,7 +962,7 @@ class _AdminPageState extends State<AdminPage> {
                 _statCard(
                   width: cardWidth,
                   title: 'Toplam katalog kaydı',
-                  value: '$total',
+                  value: '${total + customItemCount}',
                   detail: 'Yayındaki içerikler',
                   icon: Icons.inventory_2_outlined,
                   color: const Color(0xFFEDE7D9),
@@ -1213,6 +1308,109 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Widget _customCategoriesSection() {
+    final categories = _content.customCategories;
+    if (categories.isEmpty) {
+      return _emptyState(
+        'Henüz özel kategori yok. Ürünlerinizi gruplamak için '
+        'kategori ekleyin.',
+        icon: Icons.category_outlined,
+        action: _editCustomCategory,
+      );
+    }
+    return Column(
+      children: [
+        for (final category in categories)
+          Card(
+            color: Colors.white,
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(17),
+              side: const BorderSide(color: Color(0xFFE7E8EB)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      width: 58,
+                      height: 58,
+                      child: _imagePreview(category.imageUrl),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.title.text('tr'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${category.items.length} ürün',
+                          style: const TextStyle(
+                            color: Color(0xFF777C86),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Ürünleri yönet',
+                    onPressed: _busy
+                        ? null
+                        : () => _manageCustomCategory(category),
+                    icon: const Icon(Icons.inventory_2_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Kategoriyi düzenle',
+                    onPressed: _busy
+                        ? null
+                        : () => _editCustomCategory(category: category),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Kategoriyi sil',
+                    onPressed: _busy
+                        ? null
+                        : () => _deleteCustomCategory(category),
+                    color: const Color(0xFFB34343),
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _imagePreview(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return const ColoredBox(
+        color: Color(0xFFF5F0E6),
+        child: Icon(Icons.image_outlined, color: Color(0xFF8F6826)),
+      );
+    }
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => const ColoredBox(
+        color: Color(0xFFF5F0E6),
+        child: Icon(Icons.broken_image_outlined, color: Color(0xFF8F6826)),
+      ),
+    );
+  }
+
   Widget _catalogCard(SiteContentItem item, int index) {
     final badge = item.badge?.text('tr');
     final location = item.location?.text('tr');
@@ -1231,15 +1429,12 @@ class _AdminPageState extends State<AdminPage> {
             Container(
               width: 44,
               height: 44,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F0E6),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                _sectionIcon(_section),
-                color: const Color(0xFF8F6826),
-                size: 21,
-              ),
+              child: _imagePreview(item.imageUrl),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1565,16 +1760,23 @@ class _AdminPageState extends State<AdminPage> {
     _ => 'Adres',
   };
 
-  String _sectionTitle(_AdminSection section) => switch (section) {
-    _AdminSection.overview => 'Genel bakış',
-    _AdminSection.site => 'Site bilgileri',
-    _AdminSection.services => 'Hizmetler',
-    _AdminSection.fleet => 'Araç filosu',
-    _AdminSection.properties => 'Konaklama',
-    _AdminSection.destinations => 'Destinasyonlar',
-    _AdminSection.packages => 'Tur paketleri',
-    _AdminSection.bookingOptions => 'Rezervasyon seçenekleri',
-  };
+  String _sectionTitle(_AdminSection section) {
+    if (section == _AdminSection.customCategoryItems) {
+      return _activeCustomCategory?.title.text('tr') ?? 'Kategori ürünleri';
+    }
+    return switch (section) {
+      _AdminSection.overview => 'Genel bakış',
+      _AdminSection.site => 'Site bilgileri',
+      _AdminSection.services => 'Hizmetler',
+      _AdminSection.fleet => 'Araç filosu',
+      _AdminSection.properties => 'Konaklama',
+      _AdminSection.destinations => 'Destinasyonlar',
+      _AdminSection.packages => 'Tur paketleri',
+      _AdminSection.customCategories => 'Kategoriler',
+      _AdminSection.customCategoryItems => 'Kategori ürünleri',
+      _AdminSection.bookingOptions => 'Rezervasyon seçenekleri',
+    };
+  }
 
   IconData _sectionIcon(_AdminSection section) => switch (section) {
     _AdminSection.overview => Icons.space_dashboard_outlined,
@@ -1584,6 +1786,8 @@ class _AdminPageState extends State<AdminPage> {
     _AdminSection.properties => Icons.apartment_outlined,
     _AdminSection.destinations => Icons.place_outlined,
     _AdminSection.packages => Icons.luggage_outlined,
+    _AdminSection.customCategories => Icons.category_outlined,
+    _AdminSection.customCategoryItems => Icons.inventory_2_outlined,
     _AdminSection.bookingOptions => Icons.fact_check_outlined,
   };
 
@@ -1592,7 +1796,8 @@ class _AdminPageState extends State<AdminPage> {
       section == _AdminSection.fleet ||
       section == _AdminSection.properties ||
       section == _AdminSection.destinations ||
-      section == _AdminSection.packages;
+      section == _AdminSection.packages ||
+      section == _AdminSection.customCategoryItems;
 }
 
 class _CatalogItemDialog extends StatefulWidget {
@@ -1607,11 +1812,13 @@ class _CatalogItemDialog extends StatefulWidget {
 class _CatalogItemDialogState extends State<_CatalogItemDialog> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
+  final _imageUrlController = TextEditingController();
   String _locale = 'tr';
 
   @override
   void initState() {
     super.initState();
+    _imageUrlController.text = widget.item?.imageUrl ?? '';
     for (final field in [
       'title',
       'description',
@@ -1642,6 +1849,7 @@ class _CatalogItemDialogState extends State<_CatalogItemDialog> {
     for (final controller in _controllers.values) {
       controller.dispose();
     }
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -1698,6 +1906,9 @@ class _CatalogItemDialogState extends State<_CatalogItemDialog> {
         price: _optionalText('price'),
         badge: _optionalText('badge'),
         features: _features(),
+        imageUrl: _imageUrlController.text.trim().isEmpty
+            ? null
+            : _imageUrlController.text.trim(),
       ),
     );
   }
@@ -1757,6 +1968,30 @@ class _CatalogItemDialogState extends State<_CatalogItemDialog> {
                   'Özellikler (her satıra bir özellik)',
                   maxLines: 4,
                 ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _imageUrlController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Ürün görseli bağlantısı',
+                    hintText: 'https://...',
+                    helperText: 'Görsel bağlantısını yapıştırın.',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.image_outlined),
+                  ),
+                  validator: _validateImageUrl,
+                  onChanged: (_) => setState(() {}),
+                ),
+                if (_imageUrlController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 150,
+                      child: _imagePreview(_imageUrlController.text.trim()),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1799,6 +2034,171 @@ class _CatalogItemDialogState extends State<_CatalogItemDialog> {
           : null,
     );
   }
+
+  Widget _imagePreview(String imageUrl) {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => const ColoredBox(
+        color: Color(0xFFF5F0E6),
+        child: Center(
+          child: Icon(Icons.broken_image_outlined, color: Color(0xFF8F6826)),
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomCategoryDialog extends StatefulWidget {
+  const _CustomCategoryDialog({this.category});
+
+  final SiteCustomCategory? category;
+
+  @override
+  State<_CustomCategoryDialog> createState() => _CustomCategoryDialogState();
+}
+
+class _CustomCategoryDialogState extends State<_CustomCategoryDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final Map<String, TextEditingController> _controllers = {};
+  final _imageUrlController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _imageUrlController.text = widget.category?.imageUrl ?? '';
+    for (final locale in _locales.keys) {
+      _controllers[locale] = TextEditingController(
+        text: widget.category?.title.translations[locale] ?? '',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    _imageUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        widget.category == null ? 'Yeni kategori' : 'Kategoriyi düzenle',
+      ),
+      content: SizedBox(
+        width: 520,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final locale in _locales.entries) ...[
+                  TextFormField(
+                    controller: _controllers[locale.key],
+                    textDirection: locale.key == 'ar'
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    decoration: InputDecoration(
+                      labelText: 'Kategori adı · ${locale.value}',
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: locale.key == 'tr'
+                        ? (value) => value == null || value.trim().isEmpty
+                              ? 'Türkçe kategori adı gerekli.'
+                              : null
+                        : null,
+                  ),
+                  if (locale.key != 'ar') const SizedBox(height: 12),
+                ],
+                TextFormField(
+                  controller: _imageUrlController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Kategori kapak görseli',
+                    hintText: 'https://...',
+                    helperText:
+                        'Görsel bağlantısını yapıştırın (isteğe bağlı).',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.image_outlined),
+                  ),
+                  validator: _validateImageUrl,
+                  onChanged: (_) => setState(() {}),
+                ),
+                if (_imageUrlController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 150,
+                      width: double.infinity,
+                      child: Image.network(
+                        _imageUrlController.text.trim(),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const ColoredBox(
+                              color: Color(0xFFF5F0E6),
+                              child: Center(
+                                child: Icon(Icons.broken_image_outlined),
+                              ),
+                            ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Vazgeç'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.pop(
+              context,
+              SiteCustomCategory(
+                id:
+                    widget.category?.id ??
+                    'category-${DateTime.now().microsecondsSinceEpoch}',
+                title: SiteText({
+                  for (final locale in _locales.keys)
+                    if (_controllers[locale]!.text.trim().isNotEmpty)
+                      locale: _controllers[locale]!.text.trim(),
+                }),
+                imageUrl: _imageUrlController.text.trim().isEmpty
+                    ? null
+                    : _imageUrlController.text.trim(),
+                items: widget.category?.items ?? const [],
+              ),
+            );
+          },
+          icon: const Icon(Icons.check, size: 18),
+          label: const Text('Kategoriyi kaydet'),
+        ),
+      ],
+    );
+  }
+}
+
+String? _validateImageUrl(String? value) {
+  final text = value?.trim() ?? '';
+  if (text.isEmpty) return null;
+  final uri = Uri.tryParse(text);
+  if (uri == null ||
+      !uri.hasAuthority ||
+      (uri.scheme != 'https' && uri.scheme != 'http')) {
+    return 'Geçerli bir http veya https görsel bağlantısı girin.';
+  }
+  return null;
 }
 
 class _BookingOptionDialog extends StatefulWidget {

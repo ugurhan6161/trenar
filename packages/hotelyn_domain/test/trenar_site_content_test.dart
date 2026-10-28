@@ -10,6 +10,7 @@ void main() {
 
       expect(decoded.phone, content.phone);
       expect(decoded.services, hasLength(content.services.length));
+      expect(decoded.customCategories, isEmpty);
       expect(decoded.bookingOptions, hasLength(content.bookingOptions.length));
       expect(
         decoded.bookingOptions.first.text('en'),
@@ -18,6 +19,54 @@ void main() {
       expect(
         decoded.destinations.first.title.text('en'),
         'Trabzon & Black Sea',
+      );
+    });
+
+    test('custom categories and catalog image URLs round-trip', () {
+      final json =
+          Map<String, dynamic>.of(
+              TrenarSiteContent.defaultContent.toJson(),
+            )
+            ..['custom_categories'] = [
+              {
+                'id': 'airport-transfers',
+                'title': {
+                  'tr': 'Havalimanı transferleri',
+                  'en': 'Airport transfers',
+                },
+                'image_url': 'https://example.com/category.jpg',
+                'items': [
+                  {
+                    'title': {'tr': 'VIP transfer', 'en': 'VIP transfer'},
+                    'description': {
+                      'tr': 'Özel ulaşım',
+                      'en': 'Private transport',
+                    },
+                    'price': {'tr': '2.500 TL', 'en': '€75'},
+                    'image_url': 'https://example.com/transfer.jpg',
+                  },
+                ],
+              },
+            ];
+
+      final decoded = TrenarSiteContent.fromJson(json);
+
+      expect(decoded.customCategories, hasLength(1));
+      expect(
+        decoded.customCategories.single.title.text('en'),
+        'Airport transfers',
+      );
+      expect(
+        decoded.customCategories.single.imageUrl,
+        'https://example.com/category.jpg',
+      );
+      expect(
+        decoded.customCategories.single.items.single.imageUrl,
+        'https://example.com/transfer.jpg',
+      );
+      expect(
+        decoded.customCategories.single.items.single.price?.text('tr'),
+        '2.500 TL',
       );
     });
 

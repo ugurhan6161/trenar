@@ -27,11 +27,32 @@ class TrenarCategoryPage extends StatelessWidget {
           category: category,
           index: index,
           item: _items[index],
+          customCategory: arguments.customCategory,
         ),
     ];
-    final heroAsset = entries.isEmpty
-        ? 'assets/images/brand/trenar_mark_gold.png'
-        : entries.first.coverAsset;
+    final categoryImageUrl = arguments.customCategory?.imageUrl;
+    final heroCover = categoryImageUrl != null
+        ? Image.network(
+            categoryImageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => entries.isEmpty
+                ? Image.asset(
+                    'assets/images/brand/trenar_mark_gold.png',
+                    fit: BoxFit.cover,
+                  )
+                : entries.first.coverImage(fit: BoxFit.cover),
+          )
+        : entries.isEmpty
+        ? Image.asset(
+            'assets/images/brand/trenar_mark_gold.png',
+            fit: BoxFit.cover,
+          )
+        : entries.first.coverImage(fit: BoxFit.cover);
+    final title = categoryTitle(
+      category,
+      strings,
+      customCategory: arguments.customCategory,
+    );
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -42,7 +63,7 @@ class TrenarCategoryPage extends StatelessWidget {
             stretch: true,
             expandedHeight: 254,
             backgroundColor: theme.scaffoldBackgroundColor,
-            title: Text(categoryTitle(category, strings)),
+            title: Text(title),
             actions: [
               IconButton(
                 tooltip: strings.text('request'),
@@ -58,12 +79,7 @@ class TrenarCategoryPage extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    heroAsset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const ColoredBox(color: TrenarBrand.darkSurface),
-                  ),
+                  heroCover,
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -97,7 +113,7 @@ class TrenarCategoryPage extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    categoryTitle(category, strings),
+                                    title,
                                     style: theme.textTheme.titleLarge?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,
@@ -134,7 +150,7 @@ class TrenarCategoryPage extends StatelessWidget {
             sliver: entries.isEmpty
                 ? SliverToBoxAdapter(
                     child: _EmptyCategory(
-                      title: categoryTitle(category, strings),
+                      title: title,
                       message: strings.text('emptyCategory'),
                     ),
                   )
@@ -178,6 +194,7 @@ class TrenarCategoryPage extends StatelessWidget {
     TrenarCatalogCategory.fleet => arguments.content.fleet,
     TrenarCatalogCategory.properties => arguments.content.properties,
     TrenarCatalogCategory.destinations => arguments.content.destinations,
+    TrenarCatalogCategory.custom => arguments.customCategory?.items ?? const [],
   };
 }
 
@@ -221,8 +238,7 @@ class _CategoryCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                entry.coverAsset,
+              entry.coverImage(
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => const ColoredBox(
                   color: TrenarBrand.darkSurface,
@@ -255,7 +271,10 @@ class _CategoryCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        TrenarCategoryIcon(category: entry.category, size: 25),
+                        TrenarCategoryIcon(
+                          category: entry.category,
+                          size: 25,
+                        ),
                         const SizedBox(width: 7),
                         Text(
                           entry.label(strings),
@@ -348,11 +367,17 @@ class _EmptyCategory extends StatelessWidget {
   );
 }
 
-String categoryTitle(TrenarCatalogCategory category, SiteStrings strings) =>
+String categoryTitle(
+  TrenarCatalogCategory category,
+  SiteStrings strings, {
+  SiteCustomCategory? customCategory,
+}) =>
+    customCategory?.title.text(strings.languageCode) ??
     switch (category) {
       TrenarCatalogCategory.services => strings.text('services'),
       TrenarCatalogCategory.packages => strings.text('packages'),
       TrenarCatalogCategory.fleet => strings.text('fleet'),
       TrenarCatalogCategory.properties => strings.text('properties'),
       TrenarCatalogCategory.destinations => strings.text('destinations'),
+      TrenarCatalogCategory.custom => strings.text('services'),
     };

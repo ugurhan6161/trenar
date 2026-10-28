@@ -136,4 +136,5 @@ IconData _categoryIcon(TrenarCatalogCategory category) => switch (category) {
   TrenarCatalogCategory.fleet => Icons.directions_car_filled_outlined,
   TrenarCatalogCategory.properties => Icons.apartment_outlined,
   TrenarCatalogCategory.destinations => Icons.explore_outlined,
+  TrenarCatalogCategory.custom => Icons.category_outlined,
 };
