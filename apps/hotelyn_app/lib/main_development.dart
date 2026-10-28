@@ -44,6 +44,6 @@ void main() {
         hotelRepository: hotelRepository,
         settings: settings,
       );
-    }),
+    }, initializeFirebase: false),
   );
 }

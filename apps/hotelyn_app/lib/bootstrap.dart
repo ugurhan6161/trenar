@@ -26,9 +26,14 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
-Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
+Future<void> bootstrap(
+  FutureOr<Widget> Function() builder, {
+  bool initializeFirebase = true,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await TrenarFirebase.initialize();
+  if (initializeFirebase) {
+    await TrenarFirebase.initialize();
+  }
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   FlutterError.onError = (details) {
     log(details.exceptionAsString(), stackTrace: details.stack);

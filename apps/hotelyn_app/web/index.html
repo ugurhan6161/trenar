@@ -31,8 +31,79 @@
 
   <title>TRENAR</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #11110f;
+    }
+
+    #app-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      background: #11110f;
+      transition: opacity 220ms ease;
+    }
+
+    #app-loading.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-mark {
+      position: relative;
+      display: grid;
+      width: 116px;
+      height: 116px;
+      place-items: center;
+    }
+
+    .loading-mark img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .loading-spinner {
+      position: absolute;
+      inset: 0;
+      border: 2px solid rgba(197, 161, 90, 0.18);
+      border-top-color: #c5a15a;
+      border-radius: 50%;
+      animation: loading-spin 900ms linear infinite;
+    }
+
+    @keyframes loading-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .loading-spinner {
+        animation: none;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="app-loading" role="status" aria-label="TRENAR yükleniyor">
+    <div class="loading-mark">
+      <img src="assets/assets/images/brand/trenar_mark_gold.png" alt="TRENAR">
+      <span class="loading-spinner" aria-hidden="true"></span>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var loading = document.getElementById('app-loading');
+      if (loading) {
+        loading.classList.add('is-hidden');
+        window.setTimeout(function () { loading.remove(); }, 240);
+      }
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

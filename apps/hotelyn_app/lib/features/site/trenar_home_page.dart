@@ -9,6 +9,7 @@ import 'package:hotelyn/core/settings/app_settings.dart';
 import 'package:hotelyn/features/site/site_strings.dart';
 import 'package:hotelyn/features/site/trenar_brand.dart';
 import 'package:hotelyn/features/site/trenar_catalog_entry.dart';
+import 'package:hotelyn/features/site/trenar_home_loading_skeleton.dart';
 import 'package:hotelyn_domain/hotelyn_domain.dart';
 import 'package:hotelyn_firebase/hotelyn_firebase.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,7 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
   TrenarSiteContent _content = TrenarSiteContent.defaultContent;
   String? _selectedService;
   bool _requestedContent = false;
+  bool _contentLoading = true;
   bool _contentUnavailable = false;
 
   @override
@@ -38,10 +40,13 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
 
   Future<void> _loadContent() async {
     try {
-      final content = await TrenarFirebase.loadSiteContent();
+      final content = await TrenarFirebase.initialize()
+          .then((_) => TrenarFirebase.loadSiteContent())
+          .timeout(const Duration(seconds: 12));
       if (!mounted) return;
       setState(() {
         _content = content;
+        _contentLoading = false;
         _contentUnavailable = false;
       });
     } on Object catch (error, stackTrace) {
@@ -52,7 +57,10 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
         name: 'TrenarHomePage',
       );
       if (!mounted) return;
-      setState(() => _contentUnavailable = true);
+      setState(() {
+        _contentLoading = false;
+        _contentUnavailable = true;
+      });
     }
   }
 
@@ -130,7 +138,9 @@ class _TrenarHomePageState extends State<TrenarHomePage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _contentLoading
+          ? const TrenarHomeLoadingSkeleton()
+          : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Center(
           child: ConstrainedBox(
